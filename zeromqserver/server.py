@@ -1,6 +1,7 @@
 import zmq
 import signal
 import sys
+import json
 
 def signal_handler(sig, frame):
     print("\nShutting down server...")
@@ -23,7 +24,14 @@ while True:
         message = socket.recv_string()
         print(f"Received from client: {message}")
 
-        socket.send_string("Hello from server!")
+        try:
+            data = json.loads(message)
+            print(json.dumps(data, indent=2))
+        except json.JSONDecodeError:
+            print("Receive NOT JSON")
+
+        socket.send_string("Data receice OK")
+
     except zmq.Again:
         continue
     except zmq.ZMQError as e:
