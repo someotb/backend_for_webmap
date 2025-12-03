@@ -2,6 +2,7 @@ import zmq
 import signal
 import sys
 import json
+from models import SessionLocal, LocationRecord
 
 def signal_handler(sig, frame):
     print("\nShutting down server...")
@@ -29,8 +30,29 @@ while True:
             print(json.dumps(data, indent=2))
         except json.JSONDecodeError:
             print("Receive NOT JSON")
+            socket.send_string("Invalid JSON")
+            continue
 
-        socket.send_string("Data receice OK")
+        loc = data.get("location", {})
+        cell = data.get("cellInfoList", [])
+
+        session = SessionLocal()
+
+        record = LocationRecord(
+            latitude=loc.get("latitude"),
+            longitude=loc.get("longitude"),
+            accuracy=loc.get("accuracy"),
+            altitude=loc.get("altitude"),
+            speed=loc.get("speed"),
+            timestamp=loc.get("timestamp"),
+            cell_info=cell
+        )
+
+        session.add(record)
+        session.commit()
+        session.close()
+
+        socket.send_string("Data saved OK")
 
     except zmq.Again:
         continue
